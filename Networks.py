@@ -16,26 +16,27 @@ class BasicBlock(nn.Module):
         self.stride = stride
 
     def forward(self, x):
-            residual = x
+        residual = x
 
-            out = self.conv1(x)
-            out = self.bn1(out)
-            out = self.relu(out)
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
 
-            out = self.conv2(out)
-            out = self.bn2(out)
+        out = self.conv2(out)
+        out = self.bn2(out)
 
-            if self.downsample is not None:
-                residual = self.downsample(x)
+        if self.downsample is not None:
+            residual = self.downsample(x)
 
-            out += residual
-            out = self.relu(out)
+        out += residual
+        out = self.relu(out)
 
-            return out
+        return out
 
 # not ready
+
 class BottleNeck(nn.Module):
-    expansion = 1
+    expansion = 4
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(BottleNeck, self).__init__()
@@ -43,8 +44,8 @@ class BottleNeck(nn.Module):
         self.bn1 = nn.BatchNorm1d(planes)
         self.conv2 = nn.Conv1d(in_channels=planes, out_channels=planes, kernel_size=3, padding=1)
         self.bn2 = nn.BatchNorm1d(planes)
-        self.conv3 = nn.Conv1d(in_channels=planes, out_channels=planes, kernel_size=1, stride=stride)
-        self.bn3 = nn.BatchNorm1d(planes)
+        self.conv3 = nn.Conv1d(in_channels=planes, out_channels=planes * self.expansion, kernel_size=1, stride=stride)
+        self.bn3 = nn.BatchNorm1d(planes * self.expansion)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
@@ -58,6 +59,10 @@ class BottleNeck(nn.Module):
 
             out = self.conv2(out)
             out = self.bn2(out)
+            out = self.relu(out)
+
+            out = self.conv3(out)
+            out = self.bn3(out)
 
             if self.downsample is not None:
                 residual = self.downsample(x)
@@ -66,6 +71,7 @@ class BottleNeck(nn.Module):
             out = self.relu(out)
 
             return out
+
 
 class ResNet(nn.Module):
 
@@ -111,8 +117,9 @@ class ResNet(nn.Module):
         x = self.layer2(x)  # 28x28
         x = self.layer3(x)  # 14x14
         x = self.layer4(x)  # 7x7
-
-        x = self.avgpool(x)  # 1x1
+        avgpool_not_200 = nn.AvgPool1d(x.shape[2], stride=1)
+        x = avgpool_not_200(x)  # 1x1
+        #x = self.avgpool(x)  # 1x1
         x = x.view(x.size(0), -1)
         x = self.fc(x)
 
