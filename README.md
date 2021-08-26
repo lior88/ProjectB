@@ -9,7 +9,7 @@ L2 Indoor positioning using multiple sensors and deep-learning
 
 ## Agenda
 
-|File       | Topics Covered |
+|File\Directory       | Topics Covered |
 |----------------|---------|
 |`Recordings`| The data recordings and relevant files |
 |`main.py`| The final attemp to solve the classic problem |
