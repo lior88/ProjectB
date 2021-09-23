@@ -18,41 +18,54 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from Networks import ResNet, BasicBlock, BottleNeck
 
-save_string = "tang_bag2"
+window_size = 200
+save_string = "hao_handheld1"
 #data = pd.read_csv('C:/Users/liorb/OneDrive - Technion/Documents/Project B - 044169/data_publish_v2/' + save_string + '/processed/data.csv')
-#acce = data[['acce_x', 'acce_y', 'acce_z']].values
-#pos = data[['pos_x', 'pos_y', 'pos_z']].values
+data1 = pd.read_csv('C:/Users/liorb/Documents/ProjectB/data_publish_v2/' + save_string + '/processed/data.csv')
+save_string = "hao_handheld2"
+data2 = pd.read_csv('C:/Users/liorb/Documents/ProjectB/data_publish_v2/' + save_string + '/processed/data.csv')
+save_string = "hao_handheld1+2"
+data = data1
 
+#data1 = data1.iloc[:-(data1.shape[0]%window_size)]
+#data2 = data2.iloc[:-(data2.shape[0]%window_size)]
+#data = pd.concat([data1, data2])
+acce = data[['acce_x', 'acce_y', 'acce_z']].values
+pos = data[['pos_x', 'pos_y', 'pos_z']].values
+
+'''
 #save_string = 'test'
 names = ['acce_x', 'acce_y', 'acce_z']
-data_acce = pd.read_csv(r'C:\Users\liorb\OneDrive - Technion\Documents\Project B - 044169\Recordings\acc_new.csv', names=names)
+#data_acce = pd.read_csv(r'C:/Users\liorb\Documents\ProjectB\Recordings\second\acce_data1.csv', names=names)
+#data_acce = pd.read_csv(r'C:/Users\liorb\OneDrive - Technion\Documents\Project B - 044169\Recordings\acc_new.csv', names=names)
 acce = data_acce.values
-data_pos = pd.read_csv(r'C:\Users\liorb\OneDrive - Technion\Documents\Project B - 044169\Recordings\accurate_position.csv', header=1)
+data_pos = pd.read_csv(r'C:/Users\liorb\OneDrive - Technion\Documents\Project B - 044169\Recordings\accurate_position.csv', header=1)
 data_pos = data_pos.iloc[0:440]
 pos = data_pos[['Height_GNSS', 'Long_GNSS', 'Lat_GNSS']].values
 pos[:, 1] = pos[:, 1]/1e9
 pos[:, 2] = pos[:, 2]/1e9
 pos[:, 0] = pos[:, 0]/1000
+'''
 
 
-window_size = 200
 num_features = 3
 batch_size = 20
 learning_rate = 7e-3
 num_epochs = 50
 allowed = 0.1  # percent of error for which we consider the result a success
 
-save_string += '_' + str(window_size) + '_window_size'  # change according to wanted file
+save_string += '_' + str(window_size) + '_window_size-for_results'  # change according to wanted file
 
 # print(acce.shape[0]/window_size)
 
 
-acce_train, acce_test, pos_train, pos_test = train_test_split(acce, pos, test_size=0.9, random_state=5, shuffle=False)
+acce_train, acce_test, pos_train, pos_test = train_test_split(acce, pos, test_size=0.1, random_state=5, shuffle=False)
 acce_train = acce_train[1:]
 acce_test = acce_test[1:]
 pos_train = pos_train[1:] - pos_train[:-1]
 # pos_no_diff = pos_test
 pos_test = pos_test[1:] - pos_test[:-1]
+
 
 train_ds = TensorDataset(torch.from_numpy(acce_train).float(), torch.from_numpy(pos_train).float())
 
@@ -74,7 +87,7 @@ epoch_time = time.time()
 best_loss = 50
 total_loss = np.zeros(num_epochs)
 total_accuracy = np.zeros(num_epochs)
-'''
+
 for epoch in range(num_epochs):
     num_correct = 0
     total_number = 0
@@ -134,7 +147,7 @@ ax2.set_title("Accuracy vs. Epoch")
 ax2.grid()
 plt.savefig("./our_checkpoints/graphs_" + save_string + ".png")
 # plt.show()
-'''
+
 state = torch.load("./our_checkpoints/" + save_string + "_ckpt.pth", map_location=device)  # there is a _best version
 model.load_state_dict(state['net'])
 

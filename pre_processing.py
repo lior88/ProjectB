@@ -14,12 +14,16 @@ def pre_pick(file_number, imu_num):
     acce_names = ['acce_x', 'acce_y', 'acce_z']
     names = []
     [names.extend([f"acce_x_imu_{cnt}", f"acce_y_imu_{cnt}", f"acce_z_imu_{cnt}"]) for cnt in range(imu_num)]
-    file_path = os.path.join(os.getcwd(), "acce_data", f"acce_data{file_number}.csv")
+    file_path = os.path.join(os.getcwd(), "Recordings/second", f"acce_data{file_number}.csv")
     data = pd.read_csv(file_path, header=None, names=names, dtype=np.float64)
 
-    # fixing the upside down axis in some imu
-    upside_down = [col for col in data.columns if any(x in col for x in ['imu_1', 'imu_3'])]
+    # fixing the upside down axis in some imu ( arbitrary choice to change the y axis with the z axis)
+    #upside_down = [col for col in data.columns if any(x in col for x in ['z_imu_1', 'z_imu_3', 'y_imu_1', 'y_imu_3'])]
+    upside_down = [col for col in data.columns if any(x in col for x in ['z_imu_1', 'z_imu_3', 'x_imu_1', 'x_imu_3'])]
     data[upside_down] = data[upside_down] * -1
+
+    #upside_down2 = [col for col in data.columns if any(x in col for x in ['y_imu_0', 'y_imu_2'])]
+    #data[upside_down2] = data[upside_down2] * -1
     return data
 
 
@@ -38,7 +42,7 @@ def average_method(file_number, imu_num):
 
     # saving into file
     avg_method = data[["acce_x_avg", "acce_y_avg", "acce_z_avg"]]
-    avg_method.to_pickle(f"avg_method_file{file_number}.pkl")
+    avg_method.to_csv(f"Processed/avg_method_file{file_number}.csv", header=0, index=False)
     return avg_method
 
 
@@ -54,10 +58,17 @@ def voting_method(file_number, imu_num, gap):
     """
     acce_names = ['acce_x', 'acce_y', 'acce_z']
     data = pre_pick(file_number, imu_num).copy()
+    data_og = data.copy()
+
+    final_data = pd.read_csv(r'C:/Users\liorb\Documents\ProjectB\Recordings\second\acce_data1.csv') # for final count
+    final_data = final_data.iloc[:, 0:3]
+
+
     for col in data.columns:
         data[col + "_upper_bound"] = data[col].copy() + gap
         data[col + "_lower_bound"] = data[col].copy() - gap
 
+    idx = 0
     # loop for x, y, z accelerations
     for item in acce_names:
         filter_col = [col for col in data if col.startswith(item)]
@@ -87,8 +98,23 @@ def voting_method(file_number, imu_num, gap):
         # name of the chosen imu
         votes[item + "_chosen_imu"] = votes.idxmax(axis=1).array
 
-    print(votes.columns)
-    print(votes)
+        best = votes[item + "_chosen_imu"].values
+        for i in range(votes.shape[0]):
+            if best[i] == (item + '_vote_{0}'):
+                final_data[i, idx] = data_og[i, idx]
+            elif best[i] == (item + '_vote_{1}'):
+                final_data[i, idx] = data_og[i, 3 + idx]
+            elif best[i] == (item + '_vote_{2}'):
+                final_data[i, idx] = data_og[i, 6 + idx]
+            elif best[i] == (item + '_vote_{3}'):
+                final_data[i, idx] = data_og[i, 9 + idx]
+
+        idx = idx + 1
+
+    final_data.to_csv(f"Processed/voting_method_file{file_number}.csv", header=1, index=False)
+    #print(final_data)
+    #print(votes.columns)
+    #print(votes)
     return votes
 
 
@@ -96,19 +122,21 @@ def voting_method(file_number, imu_num, gap):
 # 
 # executing average method for all csv files
 _ = [average_method(file_number=cnt, imu_num=4) for cnt in range(1, 11)]
-
-# executing average method for single csv file
-file_number = 1
-imu_num = 4
-res = average_method(file_number=1, imu_num=4)
-print(res)
 '''
-
-file_number = 1
+# executing average method for single csv file
+file_number = 3
 imu_num = 4
 gap = 0.2
+average_method(file_number, imu_num)
+
 voting_method(file_number, imu_num, gap)
 
-
-
-
+for i in range(imu_num):
+    tmp_data = pd.read_csv(fr'C:/Users\liorb\Documents\ProjectB\Recordings\second\acce_data{file_number}.csv')
+    tmp_data = tmp_data.iloc[:, 3*i:3*(i+1)]
+    if (i%2) == 1:
+        tmp_data.iloc[:, 0] = tmp_data.iloc[:, 0] * -1  # x axis
+        tmp_data.iloc[:, 2] = tmp_data.iloc[:, 2] * -1  # z axis
+    #else:
+        #tmp_data.iloc[:, 1] = tmp_data.iloc[:, 1] * -1  # y axis
+    tmp_data.to_csv(f"Processed/acce_data{file_number}_imu{i+1}.csv", header=0, index=False)
