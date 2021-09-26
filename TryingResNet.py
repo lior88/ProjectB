@@ -18,14 +18,15 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from Networks import ResNet, BasicBlock, BottleNeck
 
-window_size = 200
-save_string = "hao_handheld1"
+window_size = 50
+#save_string = "tang_handheld1_modified"
 #data = pd.read_csv('C:/Users/liorb/OneDrive - Technion/Documents/Project B - 044169/data_publish_v2/' + save_string + '/processed/data.csv')
-data1 = pd.read_csv('C:/Users/liorb/Documents/ProjectB/data_publish_v2/' + save_string + '/processed/data.csv')
-save_string = "hao_handheld2"
-data2 = pd.read_csv('C:/Users/liorb/Documents/ProjectB/data_publish_v2/' + save_string + '/processed/data.csv')
-save_string = "hao_handheld1+2"
-data = data1
+#data1 = pd.read_csv('C:/Users/liorb/Documents/ProjectB/modified_ridi/' + save_string + '.csv')
+#save_string = "tang_handheld2_modified"
+#data2 = pd.read_csv('C:/Users/liorb/Documents/ProjectB/modified_ridi/' + save_string + '.csv')
+#save_string = "tang_handheld1+2_modified"
+save_string = "hao_handheld2_modified"
+data = pd.read_csv('C:/Users/liorb/Documents/ProjectB/modified_ridi/' + save_string + '.csv')
 
 #data1 = data1.iloc[:-(data1.shape[0]%window_size)]
 #data2 = data2.iloc[:-(data2.shape[0]%window_size)]
@@ -112,7 +113,10 @@ for epoch in range(num_epochs):
         epoch_loss.append(loss.item())
     epoch_time = time.time() - epoch_time
     total_loss[epoch] = np.mean(epoch_loss)
-    total_accuracy[epoch] = int(num_correct) * 100 / total_number
+    if total_number != 0:
+        total_accuracy[epoch] = int(num_correct) * 100 / total_number
+    else:
+        total_accuracy[epoch] = 0
     log = 'Epoch: {} | Loss: {:.4f} |'.format(epoch, total_loss[epoch])
     log += ' Accuracy: {:.2f}% |'.format(total_accuracy[epoch])
     log += ' Epoch Time: {:.2f} secs |'.format(epoch_time)
@@ -155,6 +159,8 @@ model.eval()
 num = int(np.floor(np.shape(acce_test)[0] / window_size))
 num_test_correct = 0
 test_error = 0
+total_dis = 0
+total_out = 0
 with torch.no_grad():
     for i in range(num):
         test_outputs = model(torch.reshape(torch.from_numpy(acce_test[i * window_size:window_size * (i + 1)]),
@@ -167,7 +173,10 @@ with torch.no_grad():
         log += ' Relative error: {:.4f}% |'.format(torch.abs(test_outputs.item() - check_pos_new) * 100 / check_pos_new)
         print(log)
         test_error += criterion(torch.squeeze(test_outputs), check_pos_new.to(device))
-print('test MSE error: {:.4f} | Accuracy: {:.2f}% |'.format(test_error.item(), int(num_test_correct) * 100 / num))
+        total_dis = total_dis + check_pos_new
+        total_out = total_out + test_outputs.item()
+total_error = torch.abs(total_out - total_dis) * 100 / total_dis
+print('test MSE error: {:.4f} | Accuracy: {:.2f}% | Relative error: {:.4f}% |'.format(test_error.item(), int(num_test_correct) * 100 / num, total_error))
 
 # check_pos_old = torch.norm(torch.from_numpy(pos_no_diff[window_size * (i + 1)]
 # - pos_no_diff[window_size * i])).float()

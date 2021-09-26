@@ -3,6 +3,28 @@ import os
 import numpy as np
 
 
+def modify_file(file_name, rate):
+    """
+    averages the ridi dataset according to a known rate
+    :param file_name: name of csv file to average
+    :param rate: the sampling rate desired
+    """
+    data = pd.read_csv("C:/Users\liorb\Documents\ProjectB\data_publish_v2/" + file_name + "/processed/data.csv", index_col=0)
+    names = list(data.columns.values)
+    win_size = int(np.floor(200/rate))
+    size = data.shape[0]
+    num_times = int(np.floor(size/win_size))
+    modified_data = pd.DataFrame(columns=names)
+
+    for i in range(num_times):
+        tmp = data.iloc[win_size*i:win_size*(i+1)]
+        modified_data = modified_data.append(tmp.mean(axis=0), ignore_index=True)
+
+    modified_data.to_csv("C:/Users\liorb\Documents\ProjectB\modified_ridi/" + file_name + "_modified.csv")
+
+    return
+
+
 def pre_pick(file_number, imu_num):
     """
     pre processing function
@@ -19,8 +41,8 @@ def pre_pick(file_number, imu_num):
 
     # fixing the upside down axis in some imu ( arbitrary choice to change the y axis with the z axis)
     #upside_down = [col for col in data.columns if any(x in col for x in ['z_imu_1', 'z_imu_3', 'y_imu_1', 'y_imu_3'])]
-    upside_down = [col for col in data.columns if any(x in col for x in ['z_imu_1', 'z_imu_3', 'x_imu_1', 'x_imu_3'])]
-    data[upside_down] = data[upside_down] * -1
+    #upside_down = [col for col in data.columns if any(x in col for x in ['z_imu_1', 'z_imu_3', 'x_imu_1', 'x_imu_3'])]
+    #data[upside_down] = data[upside_down] * -1
 
     #upside_down2 = [col for col in data.columns if any(x in col for x in ['y_imu_0', 'y_imu_2'])]
     #data[upside_down2] = data[upside_down2] * -1
@@ -123,8 +145,12 @@ def voting_method(file_number, imu_num, gap):
 # executing average method for all csv files
 _ = [average_method(file_number=cnt, imu_num=4) for cnt in range(1, 11)]
 '''
+#modify_file("hao_handheld1", 31.25)
+#modify_file("hao_handheld2", 31.25)
+
 # executing average method for single csv file
-file_number = 3
+
+file_number = 2
 imu_num = 4
 gap = 0.2
 average_method(file_number, imu_num)
@@ -134,9 +160,10 @@ voting_method(file_number, imu_num, gap)
 for i in range(imu_num):
     tmp_data = pd.read_csv(fr'C:/Users\liorb\Documents\ProjectB\Recordings\second\acce_data{file_number}.csv')
     tmp_data = tmp_data.iloc[:, 3*i:3*(i+1)]
-    if (i%2) == 1:
-        tmp_data.iloc[:, 0] = tmp_data.iloc[:, 0] * -1  # x axis
-        tmp_data.iloc[:, 2] = tmp_data.iloc[:, 2] * -1  # z axis
+    #if (i%2) == 1:
+        #tmp_data.iloc[:, 0] = tmp_data.iloc[:, 0] * -1  # x axis
+        #tmp_data.iloc[:, 2] = tmp_data.iloc[:, 2] * -1  # z axis
     #else:
         #tmp_data.iloc[:, 1] = tmp_data.iloc[:, 1] * -1  # y axis
     tmp_data.to_csv(f"Processed/acce_data{file_number}_imu{i+1}.csv", header=0, index=False)
+

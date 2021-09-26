@@ -47,8 +47,8 @@ def gps2ecef_custom(latitude, longitude, altitude):
 
 names = ['acce_x', 'acce_y', 'acce_z']
 #data_acce = pd.read_csv(r'C:/Users\liorb\Documents\ProjectB\Processed\acce_data2_imu1.csv', names=names)
-#data_acce = pd.read_csv(r'C:/Users\liorb\Documents\ProjectB\Processed\avg_method_file2.csv', names=names)
-data_acce = pd.read_csv(r'C:/Users\liorb\Documents\ProjectB\Processed\voting_method_file2.csv', names=names)
+data_acce = pd.read_csv(r'C:/Users\liorb\Documents\ProjectB\Processed\avg_method_file2.csv', names=names)
+#data_acce = pd.read_csv(r'C:/Users\liorb\Documents\ProjectB\Processed\voting_method_file2.csv', names=names)
 
 #cols = ['acce_x', 'acce_z', 'acce_y']
 #data_acce = data_acce[cols]
@@ -56,8 +56,8 @@ acce = data_acce.values
 
 data_pos = pd.read_csv(r'C:/Users/liorb/Documents/ProjectB/Recordings/second/position_step2.csv')
 pos = data_pos[['Height_GNSS', 'Long_GNSS', 'Lat_GNSS']].values
-pos[:, 1] = pos[:, 1]/1e9
-pos[:, 2] = pos[:, 2]/1e9
+#pos[:, 1] = pos[:, 1]/1e9
+#pos[:, 2] = pos[:, 2]/1e9
 #pos[:, 0] = pos[:, 0]/1000
 
 
@@ -72,7 +72,7 @@ for pt in pos_array:
     i = i + 1
 
 
-window_size = 200
+window_size = 50
 num_features = 3
 batch_size = 20
 learning_rate = 7e-3
@@ -94,15 +94,17 @@ model = ResNet(BasicBlock, [3, 4, 6, 3]).to(device)  # ResNet34
 
 
 #state = torch.load("./our_checkpoints/" + "tang_bag1+2_200_window_size-for_results" + "_ckpt.pth", map_location=device)
-state = torch.load("./our_checkpoints/" + "hao_handheld1_200_window_size-for_results" + "_ckpt.pth", map_location=device)  # there is a _best version
+state = torch.load("./our_checkpoints/" + "hao_handheld2_modified_50_window_size-for_results" + "_ckpt.pth", map_location=device)  # there is a _best version
 model.load_state_dict(state['net'])
 
 model.eval()
 num = int(np.floor(np.shape(acce_test)[0] / window_size))
 num_test_correct = 0
 test_error = 0
+total_dis = 0
+total_out = 0
 with torch.no_grad():
-    for i in range(num):
+    for i in range(1, num-1):
         test_outputs = model(torch.reshape(torch.from_numpy(acce_test[i * window_size:window_size * (i + 1)]),
                                            (1, 3, window_size)).float().to(device))
         check_pos_new = torch.sum(torch.norm(torch.from_numpy(pos_test), dim=1).float()
@@ -113,7 +115,10 @@ with torch.no_grad():
         log += ' Relative error: {:.4f}% |'.format(torch.abs(test_outputs.item() - check_pos_new) * 100 / check_pos_new)
         print(log)
         test_error += criterion(torch.squeeze(test_outputs), check_pos_new.to(device))
-print('test MSE error: {:.4f} | Accuracy: {:.2f}% |'.format(test_error.item(), int(num_test_correct) * 100 / num))
+        total_dis = total_dis + check_pos_new
+        total_out = total_out + test_outputs.item()
+total_error = torch.abs(total_out - total_dis) * 100 / total_dis
+print('test MSE error: {:.4f} | Accuracy: {:.2f}% | Relative error: {:.4f}% |'.format(test_error.item(), int(num_test_correct) * 100 / num,  total_error))
 
 # check_pos_old = torch.norm(torch.from_numpy(pos_no_diff[window_size * (i + 1)]
 # - pos_no_diff[window_size * i])).float()
