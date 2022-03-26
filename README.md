@@ -18,13 +18,14 @@ L2 Indoor positioning using multiple sensors and deep-learning
 |`Networks.py`| the implementations of the ResNet network with our changes |
 |`NewNet.py`| Implementation of our own net |
 |`NetByTutorial.py`| Another Implementation of our own net |
-|`TryingResNet.py`| Implementation of the PDRNet | 
+|`TryingResNet.py`| Implementation of the PDRNet we used for the results | 
 |`recorded_data_stuff.py`| Arranging the recorded data as needed | 
 |`Testing.py`| Testing the data using the trained network | 
 |`pre_processing.py`| Processing the data in different methods |
 |`Results.docx`| The results and an explanation |
 |`09380360.pdf`| PDRNet: A Deep-Learning Pedestrian Dead Reckoning Framework |
 |`StepNet.pdf`| StepNet—Deep Learning Approaches for Step Length Estimation |
+|`finite_results.txt`| The results we got |
 
 ## The RIDI dataset
 You can find the link to download the RIDI dataset at:
