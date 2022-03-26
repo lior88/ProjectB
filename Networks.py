@@ -1,5 +1,12 @@
 import torch.nn as nn
 import torch
+import numpy as np
+
+
+def calc_conv_dim(in_size, stride, padding, kernel_size, dilate):
+    out_size = (in_size + 2*padding - dilate*(kernel_size - 1) - 1)/stride
+    out_size = int(np.floor(out_size + 1))
+    return out_size
 
 
 class BasicBlock(nn.Module):
@@ -34,6 +41,7 @@ class BasicBlock(nn.Module):
         return out
 
 # not ready
+
 
 class BottleNeck(nn.Module):
     expansion = 4
@@ -75,10 +83,15 @@ class BottleNeck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, block, layers, num_classes=1):
+    def __init__(self, block, layers, num_classes=1, abs_flag=False):
         self.inplanes = 64
         super(ResNet, self).__init__()
-        self.conv1 = nn.Conv1d(3, 64, kernel_size=7, stride=2, padding=3,
+        if abs_flag:
+            in_channels = 1
+        else:
+            in_channels = 3
+
+        self.conv1 = nn.Conv1d(in_channels=in_channels, out_channels=64, kernel_size=7, stride=2, padding=3,
                                bias=False)
         self.bn1 = nn.BatchNorm1d(64)
         self.relu = nn.ReLU(inplace=True)
@@ -122,5 +135,46 @@ class ResNet(nn.Module):
         #x = self.avgpool(x)  # 1x1
         x = x.view(x.size(0), -1)
         x = self.fc(x)
+
+        return x
+
+
+class SimpleNet(nn.Module):
+
+    def __init__(self, win_size, out1=32, out2=64, abs_flag=False):
+
+        super(SimpleNet, self).__init__()
+        if abs_flag:
+            in_planes = 1
+        else:
+            in_planes = 3
+
+        self.conv1 = nn.Conv1d(in_channels=in_planes, out_channels=out1, kernel_size=3, stride=1, padding=1)
+        self.norm1 = nn.BatchNorm1d(out1)
+        self.conv2 = nn.Conv1d(in_channels=out1, out_channels=out2, kernel_size=3, padding=1)
+        self.norm2 = nn.BatchNorm1d(out2)
+        self.relu3 = nn.ReLU()
+        self.pool = nn.MaxPool1d(kernel_size=2, stride=2)
+        # self.norm5 = nn.BatchNorm1d(out2)
+        self.drop = nn.Dropout(p=0.2)
+        self.fc1 = nn.Linear(int(np.floor(win_size/2) * out2), 16)
+        self.relu3 = nn.ReLU()
+        self.fc2 = nn.Linear(16, 1)
+        self.sig = nn.Sigmoid()
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.norm1(x)
+        x = self.conv2(x)
+        x = self.norm2(x)
+        x = self.relu3(x)
+        x = self.pool(x)
+        # x = self.norm5(x)
+        x = self.drop(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc1(x)
+        x = self.relu3(x)
+        x = self.fc2(x)
+        # x = self.sig(x)
 
         return x
